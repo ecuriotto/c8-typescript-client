@@ -1,42 +1,55 @@
-const config = require('../config.json');      /* API credentials */
-const { Camunda8 } = require('@camunda8/sdk'); /* npm i @camunda8/sdk */
+import { createCamundaClient } from "@camunda8/orchestration-cluster-api";
+import config from '../config.json' with { type: 'json' };   // API Credentials
 
-let client;
-
-async function connect() {
-
-    const c8 = new Camunda8(config);
-
-    return c8;
-}
+const client = createCamundaClient({
+    config: {
+        CAMUNDA_REST_ADDRESS: config.CAMUNDA_REST_ADDRESS,
+        CAMUNDA_AUTH_STRATEGY: "OAUTH",
+        CAMUNDA_CLIENT_ID: config.CAMUNDA_CLIENT_ID,
+        CAMUNDA_CLIENT_SECRET: config.CAMUNDA_CLIENT_SECRET,
+        CAMUNDA_OAUTH_URL: config.CAMUNDA_OAUTH_URL,
+        CAMUNDA_TOKEN_AUDIENCE: "zeebe.camunda.io",
+    },
+    log: { level: "info" },
+});
 
 (async () => {
-
-    const c8 = await connect();
-
-    client = c8.getCamundaRestClient();
 
     const topology = await client.getTopology();
 
     console.log(topology);
 
     client.createJobWorker({
-        type: 'your-type-here',        /* Worker type? */
-        timeout: 20000,
-        maxJobsToActivate: 1,
-        worker: 'some-name-worker',    /* Name your worker */
-        jobHandler: jobHandlerFunction /* Name your handler function */
+        jobType: 'credit-deduction',
+        jobTimeoutMs: 20000,
+        maxParallelJobs: 1,
+        workerName: 'credit-deduction-worker',
+        jobHandler: creditDeduction
     })
 
-    /* Add additional workers here */
+    client.createJobWorker({
+        jobType: 'credit-card-charging',
+        jobTimeoutMs: 20000,
+        maxParallelJobs: 1,
+        workerName: 'credit-card-worker',
+        jobHandler: creditCardCharging
+    })
+
 
 })()
 
-async function jobHandlerFunction(job) { /* Name your handler function */
+async function creditDeduction(job) {
 
-    console.log("Worker is doing something...");
+    console.log("Deducting customer credit...");
 
-    /* Make sure you complete the job */
+    await job.complete();
+}
+
+async function creditCardCharging(job) {
+
+    console.log("Charging card...");
+
+    await job.complete();
 }
 
 /***** These are your "services". We will use these later in Exercise 6 *****/
