@@ -41,14 +41,24 @@ const client = createCamundaClient({
 async function creditDeduction(job) {
 
     console.log("Deducting customer credit...");
-
-    await job.complete();
+    var customerId = job.variables.customerId;
+    var orderTotal = job.variables.orderTotal;
+    var customerCredit = getCustomerCredit(customerId);
+    var openAmount = deductCredit(orderTotal, customerCredit);
+    
+    await job.complete({ openAmount: openAmount , customerCredit: customerCredit });
 }
 
 async function creditCardCharging(job) {
 
     console.log("Charging card...");
 
+    var cardNumber = job.variables.cardNumber;  
+    var cvc = job.variables.cvc;
+    var cardExpiry = job.variables.cardExpiry;
+    var openAmount = job.variables.openAmount;
+
+    chargeCreditCard(cardNumber, cvc, cardExpiry, openAmount);
     await job.complete();
 }
 
@@ -74,4 +84,8 @@ function deductCredit(amount, credit) {
       if (credit < amount) { openAmount = amount - credit; }
 
       return openAmount;
+}
+
+function chargeCreditCard(cardNumber, cvc, cardExpiry, amount) {
+    console.log(`Charging card ${cardNumber}, with CVC ${cvc} and expiry ${cardExpiry}, for amount ${amount}`);
 }
