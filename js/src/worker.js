@@ -55,11 +55,15 @@ async function creditCardCharging(job) {
 
     var cardNumber = job.variables.cardNumber;  
     var cvc = job.variables.cvc;
-    var cardExpiry = job.variables.cardExpiry;
+    var cardExpiry = job.variables.expiryDate;
     var openAmount = job.variables.openAmount;
 
-    chargeCreditCard(cardNumber, cvc, cardExpiry, openAmount);
-    await job.complete();
+    try {
+        chargeCreditCard(cardNumber, cvc, cardExpiry, openAmount);
+        await job.complete();
+    } catch (error) {
+        await job.fail({ errorMessage: error.message, retries: job.retries - 1, retryBackOff: 0 });
+    }
 }
 
 /***** These are your "services". We will use these later in Exercise 6 *****/
@@ -87,5 +91,8 @@ console.log(`Deducting credit ${credit} from amount ${amount}`);
 }
 
 function chargeCreditCard(cardNumber, cvc, cardExpiry, amount) {
+    if (cardExpiry.length !== 5) {
+        throw new Error(`Invalid card expiry: ${cardExpiry}. Expected format MM/YY (5 characters).`);
+    }
     console.log(`Charging card ${cardNumber}, with CVC ${cvc} and expiry ${cardExpiry}, for amount ${amount}`);
 }
