@@ -45,7 +45,7 @@ async function creditDeduction(job) {
     var orderTotal = job.variables.orderTotal;
     var customerCredit = getCustomerCredit(customerId);
     var openAmount = deductCredit(orderTotal, customerCredit);
-    
+    console.log(`Customer ${customerId} has credit of ${customerCredit}. Open amount is ${openAmount}`);
     await job.complete({ openAmount: openAmount , customerCredit: customerCredit });
 }
 
@@ -80,7 +80,7 @@ function getCustomerCredit(customerId) {
 function deductCredit(amount, credit) {
 
       let openAmount = 0.0;
-
+console.log(`Deducting credit ${credit} from amount ${amount}`);
       if (credit < amount) { openAmount = amount - credit; }
 
       return openAmount;
