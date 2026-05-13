@@ -53,7 +53,7 @@ async function creditCardCharging(job) {
 
     console.log("Charging card...");
 
-    var cardNumber = job.variables.cardNumber;  
+    var cardNumber = job.variables.cardNumber;
     var cvc = job.variables.cvc;
     var cardExpiry = job.variables.expiryDate;
     var openAmount = job.variables.openAmount;
@@ -62,7 +62,12 @@ async function creditCardCharging(job) {
         chargeCreditCard(cardNumber, cvc, cardExpiry, openAmount);
         await job.complete();
     } catch (error) {
-        await job.fail({ errorMessage: error.message, retries: job.retries - 1, retryBackOff: 0 });
+        if (error.code === 'creditCardChargeError') {
+            console.error(`Credit card charge error: ${error.message}`);
+            await job.error({ errorCode: error.code, errorMessage: error.message });
+        } else {
+            await job.fail({ errorMessage: error.message, retries: job.retries - 1, retryBackOff: 0 });
+        }
     }
 }
 
@@ -92,7 +97,9 @@ console.log(`Deducting credit ${credit} from amount ${amount}`);
 
 function chargeCreditCard(cardNumber, cvc, cardExpiry, amount) {
     if (cardExpiry.length !== 5) {
-        throw new Error(`Invalid card expiry: ${cardExpiry}. Expected format MM/YY (5 characters).`);
+        const err = new Error(`Invalid card expiry: ${cardExpiry}. Expected format MM/YY (5 characters).`);
+        err.code = 'creditCardChargeError';
+        throw err;
     }
     console.log(`Charging card ${cardNumber}, with CVC ${cvc} and expiry ${cardExpiry}, for amount ${amount}`);
 }
